@@ -4,7 +4,7 @@
         <div id="page-wrapper">
             <div class="row">
                 <div class="col-lg-12">
-                    <h1 class="page-header">Spin up a new sMAP driver</h1>
+                    <h1 class="page-header">Spin up a new sMAP stack</h1>
                 </div>
                 <!-- /.col-lg-12 -->
             </div>
@@ -21,17 +21,25 @@
                                     <form role="form">
                                         <div class="form-group">
                                             <label>sMAP commit or branch</label>
-                                            <input class="form-control" id="commit" placeholder="unitoftime">
+                                            <input class="form-control" id="smap_commit" placeholder="unitoftime">
+                                        </div>
+                                        <div class="form-group">
+                                            <label>ReadingDB commit or branch</label>
+                                            <input class="form-control" id="rdb_commit" placeholder="adaptive">
                                         </div>
                                         <div class="form-group" id="inigroup">
                                             <label>Path to INI file (relative to python/)</label>
-                                            <input class="form-control" id="ini" placeholder="conf/caiso.ini">
+                                            <input class="form-control" id="ini" placeholder="e.g conf/archiver.ini">
                                         </div>
                                         <label>Service URL</label>
                                         <div class="form-group input-group" id="urlgroup">
                                             
-                                            <input type="text" class="form-control" id="url" placeholder="e.g prolifix-newapi">
+                                            <input type="text" class="form-control" id="url" placeholder="e.g bse-actuation">
                                             <span class="input-group-addon">.rapid.cal-sdb.org</span>
+                                        </div>
+                                        <div class="form-group">
+                                            <label>Service port (will be mapped to port 80)</label>
+                                            <input class="form-control" id="port" placeholder="80">
                                         </div>
                                     </form>
                                 </div>
@@ -42,13 +50,13 @@
                                             <label>Author</label>
                                             <input class="form-control" id="author" placeholder="Oski Bear">
                                         </div>
+                                        <div class="form-group">
+                                            <label>PowerDB2 commit or branch</label>
+                                            <input class="form-control" id="pdb_commit" placeholder="master">
+                                        </div>
                                         <div class="form-group" id="descgroup">
                                             <label>Description</label>
-                                            <input class="form-control" id="description" placeholder="e.g 'Testing Prolifix kludge'">
-                                        </div>
-                                        <div class="form-group">
-                                            <label>Service port (will be mapped to port 80)</label>
-                                            <input class="form-control" id="port" placeholder="8080">
+                                            <input class="form-control" id="description" placeholder="e.g 'BSE actuation test'">
                                         </div>
                                     </form>
                                 </div>
@@ -84,15 +92,19 @@
 <script>
     $("#submitbtn").click(function()
     {
-        data = {"smap_commit":$("#commit").val(),
+        data = {"smap_commit":$("#smap_commit").val(),
+                "pdb_commit":$("#pdb_commit").val(),
+                "rdb_commit":$("#rdb_commit").val(),
                 "ini":$("#ini").val(),
                 "url":$("#url").val(),
                 "author":$("#author").val(),
                 "description":$("#description").val(),
                 "port":$("#port").val()};
-        var abort = false;
         if (data.smap_commit == "") data.smap_commit = "unitoftime";
-        if (data.port == "") data.port = "8080";
+        if (data.rdb_commit == "") data.rdb_commit = "adaptive";
+        if (data.pdb_commit == "") data.pdb_commit = "master";
+        if (data.port == "") data.port = "80";
+        var abort = false;
         if (data.author == "")
         {
             $("#namegroup").addClass("has-error");
@@ -119,19 +131,11 @@
         $("#urlgroup").removeClass("has-error");
         $("#descgroup").removeClass("has-error");
         
-        $.post("/deploy/driver.target",JSON.stringify(data), function(dat, stat, xhr)
+        $.post("/deploy/stack.target",JSON.stringify(data), function(dat, stat, xhr)
         {
-            if(dat.status == "submitted")
-            {
-                $("#submitbtn").html("Build job submitted");
-                $("#submitbtn").prop('disabled', true);
-            }
-            else
-            {
-                $("#submitbtn").prop('disabled', true);
-                $("#submitbtn").addClass("btn-danger");
-                $("#submitbtn").html(dat["status"]);
-            }
+            console.log(dat);
+            $("#submitbtn").html("Build job submitted");
+            $("#submitbtn").prop('disabled', true);
         });
         $("#submitbtn").html("Submitting build job...");
         $("#submitbtn").prop('disabled', true);

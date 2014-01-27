@@ -24,7 +24,7 @@
 <body>
     <nav class="navbar navbar-default navbar-static-top" role="navigation" style="margin-bottom: 0">
             <div class="navbar-header">
-                <a class="navbar-brand" href="index.html">SB Admin v2.0</a>
+                <a class="navbar-brand" href="index.html">SDB Rapid Deployment Portal</a>
             </div>
             <!-- /.navbar-header -->
             </nav>
@@ -39,10 +39,10 @@
                         <a href="#"><i class="fa fa-sitemap fa-fw"></i> Deploy...<span class="fa arrow"></span></a>
                         <ul class="nav nav-second-level">
                             <li>
-                                <a href="deploy/driver">sMAP driver</a>
+                                <a href="/deploy/driver">sMAP driver</a>
                             </li>
                             <li>
-                                <a href="deploy/stack">Full stack</a>
+                                <a href="/deploy/stack">Full stack</a>
                             </li>
                         </ul>
                         <!-- /.nav-second-level -->
