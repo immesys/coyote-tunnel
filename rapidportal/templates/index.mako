@@ -20,10 +20,10 @@
                             <i class="fa fa-bar-chart-o fa-fw"></i> Currently running artfacts
                             <div class="pull-right">
                                 <div class="btn-group">
-                                    <button type="button" class="btn btn-default btn-xs">
+                                    <a class="btn btn-default btn-xs" href="https://github.com/SoftwareDefinedBuildings/rapidportal/issues/new">
                                         Report something broken
                                         </span>
-                                    </button>
+                                    </a>
                                 </div>
                             </div>
                         </div>

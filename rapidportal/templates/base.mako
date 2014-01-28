@@ -27,11 +27,22 @@
                 <a class="navbar-brand" href="index.html">SDB Rapid Deployment Portal</a>
             </div>
             <!-- /.navbar-header -->
-            </nav>
+    </nav>
     <div id="wrapper">
         <nav class="navbar-default navbar-static-side" role="navigation">
             <div class="sidebar-collapse">
                 <ul class="nav" id="side-menu">
+                    <li class="well">
+                        <div style="display">
+                        <img style="display" class="img-thumbnail" src="${pic}" height="80px">
+                        </div>
+                        <div style="display">
+                        <h2 style=""><small>${name}</small></h2>
+                        </div>
+                    </li>
+                    <li>
+                        <a href="/deauth"><i class="fa fa-sign-out fa-fw"></i> Log out</a>
+                    </li>
                     <li>
                         <a href="/"><i class="fa fa-dashboard fa-fw"></i> Dashboard</a>
                     </li>

@@ -40,7 +40,7 @@
                                     <form role="form">
                                         <div class="form-group" id="namegroup">
                                             <label>Author</label>
-                                            <input class="form-control" id="author" placeholder="Oski Bear">
+                                            <span class="form-control uneditable-input">${name}</span>
                                         </div>
                                         <div class="form-group" id="descgroup">
                                             <label>Description</label>
@@ -87,17 +87,11 @@
         data = {"smap_commit":$("#commit").val(),
                 "ini":$("#ini").val(),
                 "url":$("#url").val(),
-                "author":$("#author").val(),
                 "description":$("#description").val(),
                 "port":$("#port").val()};
         var abort = false;
         if (data.smap_commit == "") data.smap_commit = "unitoftime";
         if (data.port == "") data.port = "8080";
-        if (data.author == "")
-        {
-            $("#namegroup").addClass("has-error");
-            abort = true;
-        }
         if (data.ini == "")
         {
             $("#inigroup").addClass("has-error");
@@ -114,7 +108,6 @@
             abort = true;
         }
         if (abort) return;
-        $("#namegroup").removeClass("has-error");
         $("#inigroup").removeClass("has-error");
         $("#urlgroup").removeClass("has-error");
         $("#descgroup").removeClass("has-error");
