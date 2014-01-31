@@ -37,7 +37,7 @@
                         <img style="display" class="img-thumbnail" src="${pic}" height="80px">
                         </div>
                         <div style="display">
-                        <h2 style=""><small>${name}</small></h2>
+                        <h2 style=""><small> <i class="fa fa-github fa-fw"></i> ${name}</small></h2>
                         </div>
                     </li>
                     <li>
@@ -47,13 +47,28 @@
                         <a href="/"><i class="fa fa-dashboard fa-fw"></i> Dashboard</a>
                     </li>
                     <li>
-                        <a href="#"><i class="fa fa-sitemap fa-fw"></i> Deploy...<span class="fa arrow"></span></a>
+                        <a href="#"><i class="fa fa-cloud-upload fa-fw"></i> Deploy...<span class="fa arrow"></span></a>
                         <ul class="nav nav-second-level">
                             <li>
                                 <a href="/deploy/driver">sMAP driver</a>
                             </li>
                             <li>
                                 <a href="/deploy/stack">Full stack</a>
+                            </li>
+                        </ul>
+                        <!-- /.nav-second-level -->
+                    </li>
+                    <li>
+                        <a href="#"><i class="fa fa-sitemap fa-fw"></i> Tunnel broker<span class="fa arrow"></span></a>
+                        <ul class="nav nav-second-level">
+                            <li>
+                                <a href="/broker/allocate">Register new tunnel</a>
+                            </li>
+                            <li>
+                                <a href="/broker/register">Register new host</a>
+                            </li>
+                            <li>
+                                <a href="/broker/update">Update endpoint</a>
                             </li>
                         </ul>
                         <!-- /.nav-second-level -->
@@ -75,13 +90,10 @@
 
     <!-- Page-Level Plugin Scripts - Dashboard -->
     <script src="/static/js/plugins/morris/raphael-2.1.0.min.js"></script>
-    <script src="/static/js/plugins/morris/morris.js"></script>
 
     <!-- SB Admin Scripts - Include with every page -->
     <script src="/static/js/sb-admin.js"></script>
 
-    <!-- Page-Level Demo Scripts - Dashboard - Use for reference -->
-    <script src="/static/js/demo/dashboard-demo.js"></script>
     <%block name="scripts" />
 </body>
 

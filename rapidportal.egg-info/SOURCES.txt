@@ -6,6 +6,7 @@ production.ini
 setup.cfg
 setup.py
 rapidportal/__init__.py
+rapidportal/broker.py
 rapidportal/tests.py
 rapidportal/views.py
 rapidportal.egg-info/PKG-INFO
@@ -17,6 +18,7 @@ rapidportal.egg-info/requires.txt
 rapidportal.egg-info/top_level.txt
 rapidportal/static/favicon.ico
 rapidportal/static/footerbg.png
+rapidportal/static/gray_load.gif
 rapidportal/static/headerbg.png
 rapidportal/static/ie6.css
 rapidportal/static/middlebg.png
@@ -50,11 +52,15 @@ rapidportal/static/js/plugins/flot/jquery.flot.tooltip.min.js
 rapidportal/static/js/plugins/metisMenu/jquery.metisMenu.js
 rapidportal/static/js/plugins/morris/morris.js
 rapidportal/static/js/plugins/morris/raphael-2.1.0.min.js
+rapidportal/templates/allocate_block.mako
 rapidportal/templates/base.mako
 rapidportal/templates/buildprogress.mako
 rapidportal/templates/busy.mako
 rapidportal/templates/driver.mako
 rapidportal/templates/index.mako
+rapidportal/templates/logfile.mako
 rapidportal/templates/login.mako
+rapidportal/templates/manage.mako
 rapidportal/templates/notifications.mako
 rapidportal/templates/stack.mako
+rapidportal/templates/tunnels.mako

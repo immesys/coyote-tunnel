@@ -244,10 +244,12 @@ def logfile(request):
         return response
         
         
-    
-    
-    
-    
+@view_config(route_name='broker_allocate', renderer="rapidportal:templates/allocate_block.mako")
+def ba_allocate_block(request):
+    so = load_so(request)
+    if not so["auth"]:
+        raise exc.HTTPFound(request.route_url("auth"))
+    return {"pic":so["picture"], "name":so["userfullname"]}
     
     
     

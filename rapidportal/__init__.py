@@ -24,5 +24,20 @@ def main(global_config, **settings):
     config.add_route('auth','/auth')
     config.add_route('deauth','/deauth')
     config.add_route('login','/logpage')
+    
+    config.add_route('broker_allocate','/broker/allocate')
+    
+    #Tunnel broker views
+    config.add_route('api_allocate','/api/allocate')
+    config.add_route('api_register4','/api/register_A/{key}')
+    config.add_route('api_register6','/api/register_AAAA/{key}')
+    config.add_route('api_update','/u/{key}')
+    config.add_route('api_retire','/api/retire/{key}')
+    config.add_route('init_tunnels','/backend/init')
+    config.add_route('linuxconfigscript','/c/nix/{key}')
+    config.add_route('whoami','/broker/whoami')
+    
+    
+    
     config.scan()
     return config.make_wsgi_app()
