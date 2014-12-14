@@ -18,14 +18,12 @@ def main(global_config, **settings):
     config.add_route('driver', '/deploy/driver')
     config.add_route('stack', '/deploy/stack')
     config.add_route('manage','/manage/{uuid}')
-    config.add_route('logfile','/logfile/{uuid}')
-    config.add_route('stacktarget', '/deploy/stack.target')
-    config.add_route('drivertarget', '/deploy/driver.target')
     config.add_route('auth','/auth')
     config.add_route('deauth','/deauth')
     config.add_route('login','/logpage')
     
     config.add_route('broker_allocate','/broker/allocate')
+    config.add_route('broker_update', '/broker/update')
     
     #Tunnel broker views
     config.add_route('api_allocate','/api/allocate')

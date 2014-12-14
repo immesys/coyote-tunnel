@@ -61,9 +61,9 @@ def set_record4(name, ip, key):
     db.dns.save({"name":name,"t":4,"key":key})
     return "success"
             
-def get_block(owner, ip, useragent):
+def get_block(owner, ip, useragent, username):
     key = str(uuid.uuid4())
-    new_block = {"owner":owner, "creatingip":ip,"agent":useragent, "date":time.time(), "key":key}
+    new_block = {"owner":owner, "username":username, "creatingip":ip,"agent":useragent, "date":time.time(), "key":key}
     curs = db.blocks.find().sort("number", pymongo.DESCENDING)
     if curs.count() == 0:
         new_num = 1
@@ -85,7 +85,7 @@ def get_block(owner, ip, useragent):
     curs = db.blocks.find({"number":new_num})
     if curs.count() != 1:
         db.blocks.remove({"_id":i})
-        return get_block(owner, ip, useragent)
+        return get_block(owner, ip, useragent, username)
     else:
         return (new_block, key)
 
@@ -162,7 +162,7 @@ def allocate(request):
         
     print repr(request.POST)
     owner = so["userfullname"]
-    block, key = get_block(owner, request.remote_addr, request.remote_user)
+    block, key = get_block(owner, request.remote_addr, request.remote_user, so["username"])
     if block is None:
         rv = {"status":"error", "message":"No more blocks to allocate (guess we got DoS'd)"}
         return json.dumps(rv, indent=2)
@@ -329,5 +329,4 @@ def init_tunnels(request):
         tun_up(block["key"])
     rv = {"status":"success", "tunnels":rvl}
     return json.dumps(rv, indent=2)
-    
-    
+

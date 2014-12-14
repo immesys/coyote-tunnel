@@ -31,7 +31,7 @@ from pyramid.response import FileResponse, Response
 import tempfile
 
 client = pymongo.MongoClient()
-db = client.rapid
+db = client.coyote
 
 
 def tstamp():
@@ -118,19 +118,6 @@ def generictarget(request, typ):
     t = threading.Thread(target=spawn_job, args=[obj, typ])
     t.start()
     return {"status":"submitted"}
-
-@view_config(route_name='manage', renderer="rapidportal:templates/manage.mako")
-def manage(request):
-    so = load_so(request)
-    if not so["auth"]:
-        raise exc.HTTPFound(request.route_url("auth"))
-        
-    jobid = request.matchdict["uuid"]
-    obj = db.services.find_one({"jobid":jobid})
-    if obj is None:
-        return {"found":False}  
-    logs = db.logs.find({"jobid":jobid})
-    return {"logfiles":logs, "pic":so["picture"], "name":so["userfullname"]}
     
 @view_config(route_name='auth')
 def login(request):
@@ -175,7 +162,15 @@ def ba_allocate_block(request):
         raise exc.HTTPFound(request.route_url("auth"))
     return {"pic":so["picture"], "name":so["userfullname"]}
     
-    
+@view_config(route_name='broker_update', renderer="rapidportal:templates/update_block.mako")
+def ba_update_block(request):
+    so = load_so(request)
+    if not so["auth"]:
+        raise exc.HTTPFound(request.route_url("auth"))
+
+    blx = db.find({"username":so["username"]})
+    tunnels = list(blx)
+    return {"pic":so["picture"], "tunnels":tunnels, "name":so["userfullname"]}
     
     
     
