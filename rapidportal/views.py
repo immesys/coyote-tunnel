@@ -61,7 +61,11 @@ def spawn_job(params, typ):
         ev = os.environ.copy()
         if typ=="driver":
             targetscript = "bake_driver_docklet.sh"
-            ev.update({"SMAPID":params["smap_commit"], "INI":params["ini"]})
+            ev.update({"SMAPID":params["smap_commit"], 
+                       "SMAPURL":params["smap_url"],
+                       "INIID":params["ini_commit"],
+                       "INIURL":params["ini_url"],
+                       "INI":params["ini"]})
         elif typ=="stack":
             targetscript = "bake_stack_docklet.sh"
             ev.update({"SMAPID":params["smap_commit"], "PDBID":params["pdb_commit"],"RDBID":params["rdb_commit"],"INI":params["ini"]})
@@ -121,26 +125,39 @@ def stack(request):
     return {"pic":so["picture"], "name":so["userfullname"]}
     
 def generictarget(request, typ):
-    so = load_so(request)
-    if not so["auth"]:
-        raise exc.HTTPClientError()
+    #so = load_so(request)
+    #if not so["auth"]:
+    #    raise exc.HTTPClientError()
         
     obj = request.json_body
     print "object is:",obj
+    print "typ is",typ
     try:
+        
         obj2 = {"description":str(obj["description"]),
-                "author":so["userfullname"],
+                "author":str(obj["author"]),  #so["userfullname"],
                 "url":str(obj["url"]),
                 "smap_commit":str(obj["smap_commit"]),
                 "ini":str(obj["ini"]),
+                "instanceid":str(obj["uuid"]),
                 "port":str(int(obj["port"]))}
         if typ == "stack":
             obj2["pdb_commit"] = str(obj["pdb_commit"])
             obj2["rdb_commit"] = str(obj["rdb_commit"])
+        elif typ == "driver":
+            obj2["smap_url"] = str(obj["smap_url"])
+            obj2["ini_url"] = str(obj["ini_url"])
+            obj2["ini_commit"] = str(obj["ini_commit"])
         obj = obj2
-    except:
+    except Exception as e:
+        print e
         return {"status":"Parameter error"}
-    
+   
+    subprocess.call(["python","/home/immesys/Dockerfiles/tools/rmsrv.py",str(obj["url"])])
+    testjob = db.services.find_one({"instanceid":obj["instanceid"]})
+    if testjob is not None:
+        return {"status":"Failed the Steve test"}
+ 
     jobid = str(uuid.uuid4())
     obj["jobid"] = jobid
     obj["state"] = "building"
