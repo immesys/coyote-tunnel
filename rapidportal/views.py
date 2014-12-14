@@ -18,9 +18,9 @@ import pyramid.httpexceptions as exc
 FIDCONF = { "gh": 
         {
             "class_": oauth2.GitHub,
-            "consumer_key":"63bf25fc93bf09b57e60",
-            "consumer_secret":"e8cc33a313e9dab6b4a43f03e0a65df622af2800",
-            "access_headers":{"User-Agent":"RapidPortal Server"},
+            "consumer_key":"8b910d0ca42687fcefb1",
+            "consumer_secret":"28718a448a652efc4a3012222a83db4305d56c2b",
+            "access_headers":{"User-Agent":"Coyote Tunnel Server"},
         }
     }
     

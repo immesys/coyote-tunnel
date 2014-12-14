@@ -56,11 +56,9 @@ rapidportal/templates/allocate_block.mako
 rapidportal/templates/base.mako
 rapidportal/templates/buildprogress.mako
 rapidportal/templates/busy.mako
-rapidportal/templates/driver.mako
 rapidportal/templates/index.mako
 rapidportal/templates/logfile.mako
 rapidportal/templates/login.mako
 rapidportal/templates/manage.mako
 rapidportal/templates/notifications.mako
-rapidportal/templates/stack.mako
 rapidportal/templates/tunnels.mako

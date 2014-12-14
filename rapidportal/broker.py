@@ -19,9 +19,9 @@ from views import load_so
 
 routing_prefix_offset = 8
 #This this is the base from which up to 50k /64's will be allocated
-routing_prefix = 0x20010470488900000000000000000000 + (routing_prefix_offset<<64)
+routing_prefix = 0x20010470488500000000000000000000 + (routing_prefix_offset<<64)
 #This is the base from which up to 50k /127's will be allocated
-p2p_prefix     = 0x20010470488900010000000000000000 + (routing_prefix_offset<<48)
+p2p_prefix     = 0x20010470488500010000000000000000 + (routing_prefix_offset<<48)
 
 inet_prefix = 0x64400000 + (routing_prefix_offset << 6)
 inet_p2p_prefix = 0x64AF0000 + (routing_prefix_offset << 4)

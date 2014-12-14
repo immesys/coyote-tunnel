@@ -6,7 +6,7 @@
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
-    <title>SDB Rapid Deployment Portal</title>
+    <title>Storm Pervasive Mesh</title>
 
     <!-- Core CSS - Include with every page -->
     <link href="/static/css/bootstrap.min.css" rel="stylesheet">
@@ -24,7 +24,7 @@
 <body>
     <nav class="navbar navbar-default navbar-static-top" role="navigation" style="margin-bottom: 0">
             <div class="navbar-header">
-                <a class="navbar-brand" href="index.html">SDB Rapid Deployment Portal</a>
+                <a class="navbar-brand" href="index.html">Storm Pervasive Mesh</a>
             </div>
             <!-- /.navbar-header -->
     </nav>
@@ -46,33 +46,15 @@
                     <li>
                         <a href="/"><i class="fa fa-dashboard fa-fw"></i> Dashboard</a>
                     </li>
-                    <li>
-                        <a href="#"><i class="fa fa-cloud-upload fa-fw"></i> Deploy...<span class="fa arrow"></span></a>
-                        <ul class="nav nav-second-level">
-                            <li>
-                                <a href="/deploy/driver">sMAP driver</a>
-                            </li>
-                            <li>
-                                <a href="/deploy/stack">Full stack</a>
-                            </li>
-                        </ul>
-                        <!-- /.nav-second-level -->
-                    </li>
-                    <li>
-                        <a href="#"><i class="fa fa-sitemap fa-fw"></i> Tunnel broker<span class="fa arrow"></span></a>
-                        <ul class="nav nav-second-level">
-                            <li>
-                                <a href="/broker/allocate">Register new tunnel</a>
-                            </li>
-                            <li>
-                                <a href="/broker/register">Register new host</a>
-                            </li>
-                            <li>
-                                <a href="/broker/update">Update endpoint</a>
-                            </li>
-                        </ul>
-                        <!-- /.nav-second-level -->
-                    </li>
+		    <li>
+			<a href="/broker/allocate"><i class="fa fa-sitemap fa-fw"></i> Register new tunnel</a>
+		    </li>
+		    <li>
+			<a href="/broker/update"><i class="fa fa-gears"></i> Configure existing tunnel</a>
+		    </li>
+		    <li>
+			<a href="/broker/register"><i class="fa fa-laptop"></i> Register new DNS record</a>
+		    </li>
                 </ul>
                 <!-- /#side-menu -->
             </div>
