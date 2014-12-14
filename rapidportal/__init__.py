@@ -12,7 +12,7 @@ def main(global_config, **settings):
     sf = UnencryptedCookieSessionFactoryConfig('comeCSRFmebro')
     
     config = Configurator(settings=settings, session_factory=sf)
-    
+    config.include('pyramid_mako')    
     config.add_static_view('static', 'static', cache_max_age=3600)
     config.add_route('home', '/')
     config.add_route('driver', '/deploy/driver')

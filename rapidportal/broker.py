@@ -19,11 +19,12 @@ from views import load_so
 
 routing_prefix_offset = 8
 #This this is the base from which up to 50k /64's will be allocated
-routing_prefix = 0x20010470803600000000000000000000 + (routing_prefix_offset<<64)
+routing_prefix = 0x20010470488900000000000000000000 + (routing_prefix_offset<<64)
 #This is the base from which up to 50k /127's will be allocated
-p2p_prefix     = 0x20010470803600010000000000000000 + (routing_prefix_offset<<48)
+p2p_prefix     = 0x20010470488900010000000000000000 + (routing_prefix_offset<<48)
 
-inet_prefix = 0x64400000 + (routing_prefix_offset << 8)
+inet_prefix = 0x64400000 + (routing_prefix_offset << 6)
+inet_p2p_prefix = 0x64AF0000 + (routing_prefix_offset << 4)
 
 broker_ipv4="50.18.70.36"
 
@@ -68,15 +69,15 @@ def get_block(owner, ip, useragent):
         new_num = 1
     else:
         new_num = curs[0]["number"] + 1
-        if new_num > 50000:
+        if new_num > 16000:
             return None, None
     new_block["number"] = new_num
     new_block["ip6"] = iptools.ipv6.long2ip(routing_prefix + (new_num<<64))
     new_block["ip4"] = iptools.ipv4.long2ip(inet_prefix + (new_num << 6))
     new_block["client_router6"] = iptools.ipv6.long2ip(p2p_prefix + (new_num << 48))
     new_block["broker_router6"] = iptools.ipv6.long2ip(p2p_prefix + (new_num << 48) + 1)
-    new_block["client_router4"] = iptools.ipv4.long2ip(inet_prefix + (new_num << 6) + 2)
-    new_block["broker_router4"] = iptools.ipv4.long2ip(inet_prefix + (new_num << 6) + 1)
+    new_block["client_router4"] = iptools.ipv4.long2ip(inet_p2p_prefix + (new_num << 2) + 2)
+    new_block["broker_router4"] = iptools.ipv4.long2ip(inet_p2p_prefix + (new_num << 2) + 1)
     new_block["active"] = False    
     
     #Crude race resolution    
@@ -147,7 +148,7 @@ def tun_up(key):
         print "link up"
         subprocess.check_call(["ip","addr","add",block["broker_router4"]+"/26","dev",tunname4])
         print "addr added"
-      #  subprocess.check_call(["ip","route","add",block["ip4"]+"/26","dev",tunname4])
+        subprocess.check_call(["ip","route","add",block["ip4"]+"/26","via",block["client_router4"],"dev",tunname4])
         print "Tunnel should be up:",tunname4
     except Exception as e:
         print "whoops4"
@@ -170,10 +171,10 @@ def allocate(request):
             "inet4_block":block["ip4"]+"/26", 
             "client_ip6":block["client_router6"]+"/127", 
             "broker_ip6":block["broker_router6"]+"/127",
-            "client_ip4":block["client_router4"]+"/26",
+            "client_ip4":block["client_router4"]+"/30",
             "update_url":"http://rapid.cal-sdb.org/u/"+key+"?ip=auto",
             "config_url_linux":"http://rapid.cal-sdb.org/c/nix/"+key,
-            "broker_ip4":block["broker_router4"]+"/26"}
+            "broker_ip4":block["broker_router4"]+"/30"}
     return json.dumps(rv, indent=2)
 
 @view_config(route_name='api_update', renderer='string')
