@@ -56,7 +56,7 @@
                                     <tbody>
                                         <tr>
                                             <td>Broker public IPv4</td>
-                                            <td>128.32.37.241</td>
+                                            <td>50.18.70.36</td>
                                             <td>The IPv4 of the broker server</td>
                                         </tr>
                                         <tr>

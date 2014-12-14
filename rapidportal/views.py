@@ -168,7 +168,7 @@ def ba_update_block(request):
     if not so["auth"]:
         raise exc.HTTPFound(request.route_url("auth"))
 
-    blx = db.find({"username":so["username"]})
+    blx = db.blocks.find({"username":so["username"]})
     tunnels = list(blx)
     return {"pic":so["picture"], "tunnels":tunnels, "name":so["userfullname"]}
     

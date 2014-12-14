@@ -20,9 +20,9 @@
                         <div class="col-lg-12">
                             <p>Updating the tunnel endpoint IP address is necessary whenever your public IP address has changed.</p>
                             <p>At the moment, we only have support for updating the endpoint via the REST API, which is a simple curl command (or you can type it in your web browser). If you know what your public IP address is, you can use the form:</p>
-                            <pre>curl http://storm.pm/u/<your tunnel uuid>?ip=<your public ip address></pre>
+                            <pre>curl http://storm.pm/u/[your tunnel uuid]?ip=[your public ip address]</pre>
                             <p>If you are behind a NAT and you don't know what the public IP address is, you can use the public IP address of the computer doing the GET request with the 'auto' parameter:</p>
-                            <pre>curl http://storm.pm/u/<your tunnel uuid>?ip=auto</pre>
+                            <pre>curl http://storm.pm/u/[your tunnel uuid]?ip=auto</pre>
                             <p>If you have lost your tunnel UUID, you can look it up in the table below</p>
                         </div>
                     </div>
@@ -52,11 +52,11 @@
                                 <tbody>
                                     % for r in tunnels:
                                         <tr>
-                                            <td>%{r["ip6"]|h}/64</td>
-                                            <td>%{r["client_router6"]|h}/10</td>
-                                            <td>%{r["broker_router6"]|h}</td>
-                                            <td>%{r["remote_ipv4"]|h}</td>
-                                            <td>%{r["key"]|h}</td>
+                                            <td>${r["ip6"]|h}/64</td>
+                                            <td>${r["client_router6"]|h}/127</td>
+                                            <td>${r["broker_router6"]|h}/127</td>
+                                            <td>${r["remote_ipv4"]|h}</td>
+                                            <td>${r["key"]|h}</td>
                                         </tr>
                                     % endfor
                                 </tbody>

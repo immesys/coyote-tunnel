@@ -27,11 +27,10 @@ inet_prefix = 0x64400000 + (routing_prefix_offset << 6)
 inet_p2p_prefix = 0x64AF0000 + (routing_prefix_offset << 4)
 
 broker_ipv4="50.18.70.36"
+broker_local_ipv4="10.200.136.214"
 
 def set_record6(name, ip, key):
     name = name.lower()
-    if re.match(r"^(([a-z0-9\-]{1,63}\.?)+(\-[a-z0-9]+)){1,255}$", name) is None:
-        return "Bad DNS name"
     r = db.dns.find_one({"name":name, "t":6})
     if r is not None:
         if r["key"] != key:
@@ -41,13 +40,13 @@ def set_record6(name, ip, key):
     if l is None:
         return "Bad IPv6 address"
     cur.execute("DELETE FROM records WHERE name=%s",[fqdn])
-    cur.execute("INSERT INTO records(domain_id, name, type, content, ttl, auth) VALUES (1, %s, AAAA, %s, 120, 1)", [fqdn, ip])
+    cur.execute("INSERT INTO records(domain_id, name, type, content, ttl, auth) VALUES (1, %s, 'AAAA', %s, 120, 1)", [fqdn, ip])
     db.dns.save({"name":name,"t":6,"key":key})
+    mysqldb.commit()
+    return "success"
 
 def set_record4(name, ip, key):
     name = name.lower()
-    if re.match(r"^(([a-z0-9\-]{1,63}\.?)+(\-[a-z0-9]+)){1,255}$", name) is None:
-        return "Bad DNS name"
     r = db.dns.find_one({"name":name, "t":4})
     if r is not None:
         if r["key"] != key:
@@ -57,8 +56,9 @@ def set_record4(name, ip, key):
     if l is None:
         return "Bad IPv4 address"
     cur.execute("DELETE FROM records WHERE name=%s",[fqdn])
-    cur.execute("INSERT INTO records(domain_id, name, type, content, ttl, auth) VALUES (1, %s, A, %s, 120, 1)", [fqdn, ip])
+    cur.execute("INSERT INTO records(domain_id, name, type, content, ttl, auth) VALUES (1, %s, 'A', %s, 120, 1)", [fqdn, ip])
     db.dns.save({"name":name,"t":4,"key":key})
+    mysqldb.commit()
     return "success"
             
 def get_block(owner, ip, useragent, username):
@@ -127,9 +127,9 @@ def tun_up(key):
     #Do tunnel 6
     try:
         print "Trying tunup",["ip","tunnel","add",tunname6,"mode","sit","remote",block["remote_ipv4"],
-            "local",broker_ipv4,"ttl","255"]
+            "local",broker_local_ipv4,"ttl","255"]
         subprocess.check_call(["ip","tunnel","add",tunname6,"mode","sit","remote",block["remote_ipv4"],
-            "local",broker_ipv4,"ttl","255"])  
+            "local",broker_local_ipv4,"ttl","255"])  
         print "Tyrying link up"
         subprocess.check_call(["ip","link","set",tunname6,"up"])
         subprocess.check_call(["ip","addr","add",block["broker_router6"]+"/127","dev",tunname6])
@@ -143,7 +143,7 @@ def tun_up(key):
     #Do tunnel 4
     try:
         subprocess.check_call(["ip","tunnel","add",tunname4,"mode","gre","remote",block["remote_ipv4"],
-            "local",broker_ipv4,"ttl","255"])  
+            "local",broker_local_ipv4,"ttl","255"])  
         subprocess.check_call(["ip","link","set",tunname4,"up"])
         print "link up"
         subprocess.check_call(["ip","addr","add",block["broker_router4"]+"/26","dev",tunname4])
@@ -172,8 +172,8 @@ def allocate(request):
             "client_ip6":block["client_router6"]+"/127", 
             "broker_ip6":block["broker_router6"]+"/127",
             "client_ip4":block["client_router4"]+"/30",
-            "update_url":"http://rapid.cal-sdb.org/u/"+key+"?ip=auto",
-            "config_url_linux":"http://rapid.cal-sdb.org/c/nix/"+key,
+            "update_url":"http://storm.pm/u/"+key+"?ip=auto",
+            "config_url_linux":"http://storm.pm/c/nix/"+key,
             "broker_ip4":block["broker_router4"]+"/30"}
     return json.dumps(rv, indent=2)
 
@@ -204,10 +204,9 @@ def update(request):
     block["remote_ipv4"] = ip
     block["active"] = True
     db.blocks.save(block)
-    if reboot:
-        tun_down(key)
-        tun_up(key)
-    rv = {"status":"success", "configurl":"http://rapid.cal-sdb.org/c/nix/%s" % key}
+    tun_down(key)
+    tun_up(key)
+    rv = {"status":"success", "configurl":"http://storm.pm/c/nix/%s" % key}
     return json.dumps(rv, indent=2)
 
 @view_config(route_name="linuxconfigscript", renderer='string')
@@ -273,9 +272,13 @@ def register6(request):
         rv = {"status":"error", "message":"Missing 'ip' field e.g '2001:470:8036:f00::ba5"}
         return json.dumps(rv, indent=2)
     print "Would register %s = %s" %(hostname, block)
-    hns = set_record6(hostname, ip, block["key"])
-    rv = {"status":"success", "hostnames":hns, "ip":ip}
-    return json.dumps(rv, indent=2)
+    msg = set_record6(hostname, ip, block["key"])
+    if msg == "success":
+        rv = {"status":"success", "hostnames":hostname+".m.storm.pm", "ip":ip}
+        return json.dumps(rv, indent=2)
+    else:
+        rv = {"status":"error", "message":msg}
+        return json.dumps(rv, indent=2)
 
 @view_config(route_name='api_register4', renderer='string')
 def register4(request):
@@ -307,9 +310,13 @@ def register4(request):
         rv = {"status":"error", "message":"Missing 'ip' field e.g '100.64.3.4'"}
         return json.dumps(rv, indent=2)
     print "Would register %s = %s" %(hostname, block)
-    hns = set_record4(hostname, ip, block["key"])
-    rv = {"status":"success", "hostnames":hns, "ip":ip}
-    return json.dumps(rv, indent=2)
+    msg = set_record4(hostname, ip, block["key"])
+    if msg == "success":
+        rv = {"status":"success", "hostnames":hostname+".m.storm.pm", "ip":ip}
+        return json.dumps(rv, indent=2)
+    else:
+        rv = {"status":"error", "message":msg}
+        return json.dumps(rv, indent=2)
     
 @view_config(route_name='whoami', renderer='string')
 def whoami(request):
