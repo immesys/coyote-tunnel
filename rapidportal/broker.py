@@ -367,7 +367,7 @@ def udp_dispatch(data, addr, mode, sock):
         if data[0] == 0x01: #update auto
             if mode != 4:
                 return ret("\x01\x02")
-            db.blocks.update({"$set":{"remote_ipv4":addr}})
+            db.blocks.update({"$set":{"remote_ipv4":[addr[0]]}})
             return ret("\x01\x00")
         if data[0] == 0x02: #update specific
             raddr = iptools.ipv4.long2ip(barray_to_long(data[17:21]))
@@ -397,7 +397,7 @@ def udp_dispatch(data, addr, mode, sock):
         if data[0] == 0x04: #update AAAA auto
             if mode != 6:
                 return ret("\x04\x05")
-            addrn = iptools.ipv6.ip2long(addr)
+            addrn = iptools.ipv6.ip2long(addr[0])
             #check IP is in the block
             if (addrn >> 80) != routing_prefix >> 80:
                 return ret("\x04\x03")
@@ -408,7 +408,7 @@ def udp_dispatch(data, addr, mode, sock):
             validre = "^([a-zA-Z0-9]|[a-zA-Z0-9][a-zA-Z0-9\-]{0,61}[a-zA-Z0-9])(\.([a-zA-Z0-9]|[a-zA-Z0-9][a-zA-Z0-9\-]{0,61}[a-zA-Z0-9]))*$"
             if not re.match(validre, name):
                 return ret("\x04\x02")
-            r = _set_record6(name, addr, str(u), mysqldb_udp4 if mode == 4 else mysqldb_udp6)
+            r = _set_record6(name, addr[0], str(u), mysqldb_udp4 if mode == 4 else mysqldb_udp6)
             if r != "success":
                 return ret("\x04\x04")
             return ret("\x04\x00")
