@@ -4,7 +4,8 @@ from authomatic import Authomatic
 import authomatic
 from authomatic.adapters import WebObAdapter
 from pyramid.session import UnencryptedCookieSessionFactoryConfig
-   
+import broker
+
 def main(global_config, **settings):
     """ This function returns a Pyramid WSGI application.
     """
@@ -34,7 +35,8 @@ def main(global_config, **settings):
     config.add_route('init_tunnels','/backend/init')
     config.add_route('linuxconfigscript','/c/nix/{key}')
     config.add_route('whoami','/broker/whoami')
-    
+
+    broker.launch_udp_backend()
     
     
     config.scan()

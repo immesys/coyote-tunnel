@@ -11,9 +11,12 @@ import subprocess
 import os
 import MySQLdb
 import socket
+import thread
+import socket
 
-mysqldb = MySQLdb.connect(host="localhost", user="coyote", passwd="coyote", db="pdns")
-cur = mysqldb.cursor()
+mysqldb_pyramid = MySQLdb.connect(host="localhost", user="coyote", passwd="coyote", db="pdns")
+mysqldb_udp4 = MySQLdb.connect(host="localhost", user="coyote", passwd="coyote", db="pdns")
+mysqldb_udp6 = MySQLdb.connect(host="localhost", user="coyote", passwd="coyote", db="pdns")
 
 from views import load_so
 
@@ -29,7 +32,7 @@ inet_p2p_prefix = 0x64AF0000 + (routing_prefix_offset << 4)
 broker_ipv4="50.18.70.36"
 broker_local_ipv4="10.200.136.214"
 
-def set_record6(name, ip, key):
+def _set_record6(name, ip, key, mdb):
     name = name.lower()
     r = db.dns.find_one({"name":name, "t":6})
     if r is not None:
@@ -39,13 +42,14 @@ def set_record6(name, ip, key):
     l = iptools.ipv6.ip2long(ip)
     if l is None:
         return "Bad IPv6 address"
+    cur = mdb.cursor()
     cur.execute("DELETE FROM records WHERE name=%s",[fqdn])
     cur.execute("INSERT INTO records(domain_id, name, type, content, ttl, auth) VALUES (1, %s, 'AAAA', %s, 120, 1)", [fqdn, ip])
+    mdb.commit()
     db.dns.save({"name":name,"t":6,"key":key})
-    mysqldb.commit()
     return "success"
 
-def set_record4(name, ip, key):
+def _set_record4(name, ip, key, mdb):
     name = name.lower()
     r = db.dns.find_one({"name":name, "t":4})
     if r is not None:
@@ -55,10 +59,11 @@ def set_record4(name, ip, key):
     l = iptools.ipv4.ip2long(ip)
     if l is None:
         return "Bad IPv4 address"
+    cur = mdb.cursor()
     cur.execute("DELETE FROM records WHERE name=%s",[fqdn])
     cur.execute("INSERT INTO records(domain_id, name, type, content, ttl, auth) VALUES (1, %s, 'A', %s, 120, 1)", [fqdn, ip])
+    mdb.commit()
     db.dns.save({"name":name,"t":4,"key":key})
-    mysqldb.commit()
     return "success"
             
 def get_block(owner, ip, useragent, username):
@@ -78,6 +83,7 @@ def get_block(owner, ip, useragent, username):
     new_block["broker_router6"] = iptools.ipv6.long2ip(p2p_prefix + (new_num << 48) + 1)
     new_block["client_router4"] = iptools.ipv4.long2ip(inet_p2p_prefix + (new_num << 2) + 2)
     new_block["broker_router4"] = iptools.ipv4.long2ip(inet_p2p_prefix + (new_num << 2) + 1)
+    new_block["remote_ipv4"] = "0.0.0.0"
     new_block["active"] = False    
     
     #Crude race resolution    
@@ -265,6 +271,9 @@ def register6(request):
         if num is None:
             rv = {"status":"error", "message":"IP is malformed"}
             return json.dumps(rv, indent=2)
+        if (num >> 80) != routing_prefix >> 80:
+            rv = {"status":"error", "message":"IP is not in block"}
+            return json.dumps(rv, indent=2)
         if ((num >> 64) & 0xFFFF) - routing_prefix_offset != block["number"]:
             rv = {"status":"error", "message":"IP is not in block"}
             return json.dumps(rv, indent=2)
@@ -272,7 +281,7 @@ def register6(request):
         rv = {"status":"error", "message":"Missing 'ip' field e.g '2001:470:8036:f00::ba5"}
         return json.dumps(rv, indent=2)
     print "Would register %s = %s" %(hostname, block)
-    msg = set_record6(hostname, ip, block["key"])
+    msg = _set_record6(hostname, ip, block["key"],mysqldb_pyramid)
     if msg == "success":
         rv = {"status":"success", "hostnames":hostname+".m.storm.pm", "ip":ip}
         return json.dumps(rv, indent=2)
@@ -310,7 +319,7 @@ def register4(request):
         rv = {"status":"error", "message":"Missing 'ip' field e.g '100.64.3.4'"}
         return json.dumps(rv, indent=2)
     print "Would register %s = %s" %(hostname, block)
-    msg = set_record4(hostname, ip, block["key"])
+    msg = _set_record4(hostname, ip, block["key"],mysqldb_pyramid)
     if msg == "success":
         rv = {"status":"success", "hostnames":hostname+".m.storm.pm", "ip":ip}
         return json.dumps(rv, indent=2)
@@ -337,3 +346,93 @@ def init_tunnels(request):
     rv = {"status":"success", "tunnels":rvl}
     return json.dumps(rv, indent=2)
 
+def barray_to_long(arr):
+    rv = 0
+    for c in arr:
+        rv <<= 8
+        rv += ord(c)
+    return rv
+
+def udp_dispatch(data, addr, mode, sock):
+    print "udp dispatch addr: ", addr
+    def ret(x):
+        sock.sendto(x, addr)
+
+    try:
+        u = uuid.UUID(bytes=data[1:17])
+        block = db.blocks.find_one({"key":str(u)})
+        if block is None: #invalid key
+            return ret(data[0]+"\x01")
+
+        if data[0] == 0x01: #update auto
+            if mode != 4:
+                return ret("\x01\x02")
+            db.blocks.update({"$set":{"remote_ipv4":addr}})
+            return ret("\x01\x00")
+        if data[0] == 0x02: #update specific
+            raddr = iptools.ipv4.long2ip(barray_to_long(data[17:21]))
+            if raddr is None:
+                return ret("\x02\x02")
+            db.blocks.update({"$set":{"remote_ipv4":raddr}})
+            return ret("\x02\x00")
+        if data[0] == 0x03: #update AAAA
+            suffix = barray_to_long(data[17:25])
+            prefix = iptools.ipv6.ip2long(block["ip6"])
+            addrn = prefix+suffix
+            gaddr = iptools.ipv6.long2ip(prefix+suffix)
+            #check IP is in the block
+            if (addrn >> 80) != routing_prefix >> 80:
+                return ret("\x03\x03")
+            if ((addrn >> 64) & 0xFFFF) - routing_prefix_offset != block["number"]:
+                return ret("\x03\x03")
+            #check the hostname is not insane
+            name = data[26:ord(data[25])]
+            validre = "^([a-zA-Z0-9]|[a-zA-Z0-9][a-zA-Z0-9\-]{0,61}[a-zA-Z0-9])(\.([a-zA-Z0-9]|[a-zA-Z0-9][a-zA-Z0-9\-]{0,61}[a-zA-Z0-9]))*$"
+            if not re.match(validre, name):
+                return ret("\x03\x02")
+            r = _set_record6(name, gaddr, str(u), mysqldb_udp4 if mode == 4 else mysqldb_udp6)
+            if r != "success":
+                return ret("\x03\x04")
+            return ret("\x03\x00")
+        if data[0] == 0x04: #update AAAA auto
+            if mode != 6:
+                return ret("\x04\x05")
+            addrn = iptools.ipv6.ip2long(addr)
+            #check IP is in the block
+            if (addrn >> 80) != routing_prefix >> 80:
+                return ret("\x04\x03")
+            if ((addrn >> 64) & 0xFFFF) - routing_prefix_offset != block["number"]:
+                return ret("\x04\x03")
+            #check the hostname is not insane
+            name = data[18:ord(data[17])]
+            validre = "^([a-zA-Z0-9]|[a-zA-Z0-9][a-zA-Z0-9\-]{0,61}[a-zA-Z0-9])(\.([a-zA-Z0-9]|[a-zA-Z0-9][a-zA-Z0-9\-]{0,61}[a-zA-Z0-9]))*$"
+            if not re.match(validre, name):
+                return ret("\x04\x02")
+            r = _set_record6(name, addr, str(u), mysqldb_udp4 if mode == 4 else mysqldb_udp6)
+            if r != "success":
+                return ret("\x04\x04")
+            return ret("\x04\x00")
+
+
+
+
+    except BaseException as be:
+        print ("Encountered error on UDP dispatch:", be)
+
+def udp_backend4():
+    sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+    sock.bind(("0.0.0.0", 410))
+    while True:
+        data, addr = sock.recvfrom(1024)
+        udp_dispatch(data,addr, 4, sock)
+
+def udp_backend6():
+    sock = socket.socket(socket.AF_INET6, socket.SOCK_DGRAM)
+    sock.bind(("2001:470:4885::", 410))
+    while True:
+        data, addr = sock.recvfrom(1024)
+        udp_dispatch(data,addr, 6, sock)
+
+def launch_udp_backend():
+    thread.start_new_thread(udp_backend4)
+    thread.start_new_thread(udp_backend6)
