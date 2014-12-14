@@ -20,7 +20,7 @@
                             <i class="fa fa-bar-chart-o fa-fw"></i> Currently running artfacts
                             <div class="pull-right">
                                 <div class="btn-group">
-                                    <a class="btn btn-default btn-xs" href="https://github.com/SoftwareDefinedBuildings/rapidportal/issues/new">
+                                    <a class="btn btn-default btn-xs" href="https://github.com/immesys/coyote-tunnel/issues/new">
                                         Report something broken
                                         </span>
                                     </a>

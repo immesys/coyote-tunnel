@@ -2,14 +2,19 @@ from pyramid.view import view_config
 import json
 import pymongo
 client = pymongo.MongoClient()
-db = client.broker
+db = client.coyote
 import time
 import iptools
 import uuid
 import re
-import boto.route53
 import subprocess
 import os
+import MySQLdb
+import socket
+
+mysqldb = MySQLdb.connect(host="localhost", user="coyote", passwd="coyote", db="pdns")
+cur = mysqldb.cursor()
+
 from views import load_so
 
 routing_prefix_offset = 8
@@ -20,39 +25,40 @@ p2p_prefix     = 0x20010470803600010000000000000000 + (routing_prefix_offset<<48
 
 inet_prefix = 0x64400000 + (routing_prefix_offset << 8)
 
-broker_ipv4="128.32.37.241"
+broker_ipv4="50.18.70.36"
 
-ACCESS="AKIAJHE77DIPG5WBDDOA"
-if "R53SECRET" not in os.environ:
-    raise Exception("No AWS R53SECRET set in environ")
-SECRET = os.environ["R53SECRET"]
-ZONENAMES=["cal-sdb.org.","calsdb.org."]
+def set_record6(name, ip, key):
+    name = name.lower()
+    if re.match(r"^(([a-z0-9\-]{1,63}\.?)+(\-[a-z0-9]+)){1,255}$", name) is None:
+        return "Bad DNS name"
+    r = db.dns.find_one({"name":name, "t":6})
+    if r is not None:
+        if r["key"] != key:
+           return "You are not the owner of this name"
+    fqdn = name+".m.storm.pm"
+    l = iptools.ipv6.ip2long(ip)
+    if l is None:
+        return "Bad IPv6 address"
+    cur.execute("DELETE FROM records WHERE name=%s",[fqdn])
+    cur.execute("INSERT INTO records(domain_id, name, type, content, ttl, auth) VALUES (1, %s, AAAA, %s, 120, 1)", [fqdn, ip])
+    db.dns.save({"name":name,"t":6,"key":key})
 
-r53 = boto.route53.connection.Route53Connection(ACCESS, SECRET)
-
-def set_record6(name, ip):
-    rv = []
-    for n in ZONENAMES:
-        hn = name+".net."+n
-        zone = r53.get_zone(n)
-        existing = zone.find_records(hn, "AAAA", 5000)
-        if existing is not None:
-            zone.delete_record(existing)
-        zone.add_record("AAAA",hn, ip)   
-        rv += [hn]
-    return rv
-    
-def set_record4(name, ip):
-    rv = []
-    for n in ZONENAMES:
-        hn = name+".net."+n
-        zone = r53.get_zone(n)
-        existing = zone.find_records(hn, "A", 5000)
-        if existing is not None:
-            zone.delete_record(existing)
-        zone.add_record("A",hn, ip)   
-        rv += [hn]
-    return rv
+def set_record4(name, ip, key):
+    name = name.lower()
+    if re.match(r"^(([a-z0-9\-]{1,63}\.?)+(\-[a-z0-9]+)){1,255}$", name) is None:
+        return "Bad DNS name"
+    r = db.dns.find_one({"name":name, "t":4})
+    if r is not None:
+        if r["key"] != key:
+           return "You are not the owner of this name"
+    fqdn = name+".m.storm.pm"
+    l = iptools.ipv4.ip2long(ip)
+    if l is None:
+        return "Bad IPv4 address"
+    cur.execute("DELETE FROM records WHERE name=%s",[fqdn])
+    cur.execute("INSERT INTO records(domain_id, name, type, content, ttl, auth) VALUES (1, %s, A, %s, 120, 1)", [fqdn, ip])
+    db.dns.save({"name":name,"t":4,"key":key})
+    return "success"
             
 def get_block(owner, ip, useragent):
     key = str(uuid.uuid4())
@@ -210,16 +216,16 @@ def configscript(request):
     if block is None:
         rv = """echo "\xb1[32;1mInvalid config key\xb1[0m"\n"""
     else:
-        rv = """# SDB Tunnel Broker auto config script
-ip tunnel add sdb-broker6 mode sit remote {remote} ttl 255
-ip link set sdb-broker6 up
-ip addr add {client6}/127 dev sdb-broker6
-ip route add ::/0 dev sdb-broker6
+        rv = """# Storm Tunnel Broker auto config script
+ip tunnel add storm-pm6 mode sit remote {remote} ttl 255
+ip link set storm-pm6 up
+ip addr add {client6}/127 dev storm-pm6
+ip route add ::/0 dev storm-pm6
 
-ip tunnel add sdb-broker4 mode gre remote {remote} ttl 255
-ip link set sdb-broker4 up
-ip addr add {client4}/26 dev sdb-broker4
-ip route add 100.64.0.0/10 dev sdb-broker4
+ip tunnel add storm-pm4 mode gre remote {remote} ttl 255
+ip link set storm-pm4 up
+ip addr add {client4}/26 dev storm-pm4
+ip route add 100.64.0.0/10 dev storm-pm4
 \n""".format(remote=broker_ipv4, client6=block["client_router6"], client4=block["client_router4"])
     return rv
     
@@ -266,7 +272,7 @@ def register6(request):
         rv = {"status":"error", "message":"Missing 'ip' field e.g '2001:470:8036:f00::ba5"}
         return json.dumps(rv, indent=2)
     print "Would register %s = %s" %(hostname, block)
-    hns = set_record6(hostname, ip)
+    hns = set_record6(hostname, ip, block["key"])
     rv = {"status":"success", "hostnames":hns, "ip":ip}
     return json.dumps(rv, indent=2)
 
@@ -300,7 +306,7 @@ def register4(request):
         rv = {"status":"error", "message":"Missing 'ip' field e.g '100.64.3.4'"}
         return json.dumps(rv, indent=2)
     print "Would register %s = %s" %(hostname, block)
-    hns = set_record4(hostname, ip)
+    hns = set_record4(hostname, ip, block["key"])
     rv = {"status":"success", "hostnames":hns, "ip":ip}
     return json.dumps(rv, indent=2)
     
