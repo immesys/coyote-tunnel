@@ -355,7 +355,9 @@ def barray_to_long(arr):
 
 def udp_dispatch(data, addr, mode, sock):
     print "udp dispatch addr: ", addr
+    print "got data:",repr(data)
     def ret(x):
+        print "returning :",repr(x)
         sock.sendto(x, addr)
 
     try:
@@ -364,18 +366,22 @@ def udp_dispatch(data, addr, mode, sock):
         if block is None: #invalid key
             return ret(data[0]+"\x01")
 
-        if data[0] == 0x01: #update auto
+        if data[0] == '\x01': #update auto
             if mode != 4:
                 return ret("\x01\x02")
-            db.blocks.update({"$set":{"remote_ipv4":[addr[0]]}})
+            db.blocks.update({"_id":block["_id"]}, {"$set":{"active":True, "remote_ipv4":addr[0]}})
+            tun_down(str(u))
+            tun_up(str(u))
             return ret("\x01\x00")
-        if data[0] == 0x02: #update specific
+        if data[0] == '\x02': #update specific
             raddr = iptools.ipv4.long2ip(barray_to_long(data[17:21]))
             if raddr is None:
                 return ret("\x02\x02")
-            db.blocks.update({"$set":{"remote_ipv4":raddr}})
+            db.blocks.update({"_id":block["_id"]}, {"$set":{"active":True, "remote_ipv4":raddr}})
+            tun_down(str(u))
+            tun_up(str(u))
             return ret("\x02\x00")
-        if data[0] == 0x03: #update AAAA
+        if data[0] == '\x03': #update AAAA
             suffix = barray_to_long(data[17:25])
             prefix = iptools.ipv6.ip2long(block["ip6"])
             addrn = prefix+suffix
@@ -394,7 +400,7 @@ def udp_dispatch(data, addr, mode, sock):
             if r != "success":
                 return ret("\x03\x04")
             return ret("\x03\x00")
-        if data[0] == 0x04: #update AAAA auto
+        if data[0] == '\x04': #update AAAA auto
             if mode != 6:
                 return ret("\x04\x05")
             addrn = iptools.ipv6.ip2long(addr[0])
@@ -412,7 +418,7 @@ def udp_dispatch(data, addr, mode, sock):
             if r != "success":
                 return ret("\x04\x04")
             return ret("\x04\x00")
-
+        return ret("\x00\x01")
 
 
 
@@ -434,5 +440,5 @@ def udp_backend6():
         udp_dispatch(data,addr, 6, sock)
 
 def launch_udp_backend():
-    thread.start_new_thread(udp_backend4)
-    thread.start_new_thread(udp_backend6)
+    thread.start_new_thread(udp_backend4, ())
+    thread.start_new_thread(udp_backend6, ())
